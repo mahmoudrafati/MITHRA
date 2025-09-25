@@ -33,9 +33,8 @@ The MITHRA Energy Label Analyzer helps businesses ensure EU energy label complia
 
 ### Super Easy - For Everyone! 
 
-**Just 2 steps:**
-1. **Download** the `mithra-energy-analyzer` folder
-2. **Double-click** `start-mithra-docker.bat`
+**Just 1 steps:**
+1. **Double-click** `start-mithra-docker.bat`
 
 That's it! The app will:
 - ✅ Check if Docker is installed (installs if needed)
