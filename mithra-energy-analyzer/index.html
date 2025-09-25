@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MITHRA Energy Label Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Toastify for better notifications -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/toastify-js"></script>
+    <!-- External libraries for CSV/Excel parsing -->
+    <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://unpkg.com/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1 class="app-title">
+                    <span class="logo">⚡</span>
+                    MITHRA
+                </h1>
+                <p class="app-description">
+                    <em> Oh gott, bitte nicht noch eine Strafzahlung</em>
+                </p>
+            </div>
+        </header>
+
+        <!-- Status Messages now handled by Toastify -->
+
+        <!-- Main Content -->
+        <main class="main-content">
+            
+            <!-- File Upload Section -->
+            <section class="upload-section">
+                <div class="upload-card">
+                    <div class="upload-header">
+                        <h2>📄 Upload Data File</h2>
+                        <button type="button" id="toggle-upload-btn" class="btn btn-sm btn-outline toggle-btn" style="display: none;">
+                            <span class="toggle-icon">▼</span>
+                        </button>
+                    </div>
+                    <div id="upload-content" class="upload-content">
+                        <div id="drop-zone" class="drop-zone">
+                        <div class="drop-zone-content">
+                            <div class="upload-icon">📁</div>
+                            <p class="upload-text">
+                                <strong>Drag & drop</strong> your CSV or Excel file here, or  
+                                <button type="button" id="select-file-btn" class="btn btn-primary">
+                                    Browse Files
+                                </button>
+                            </p>
+                            <p class="upload-info">
+                                Supported formats: CSV, XLSX, XLS (Max: 50MB)
+                            </p>
+                        </div>
+                    </div>
+                        
+                        <!-- File Input (hidden) -->
+                        <input type="file" id="file-input" accept=".csv,.xlsx,.xls" style="display: none;">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Analysis Controls -->
+            <section class="controls-section" style="display: none;">
+                <div class="controls-card">
+                    <h2>🔍 Analysis Controls</h2>
+                    <div class="controls-grid">
+                        <div class="control-group">
+                            <button type="button" id="analyze-all-btn" class="btn btn-success">
+                                <span class="btn-icon">▶️</span>
+                                Analyze All URLs
+                            </button>
+                            <button type="button" id="analyze-selected-btn" class="btn btn-secondary" disabled>
+                                <span class="btn-icon">🎯</span>
+                                Analyze Selected (<span id="selected-count">0</span>)
+                            </button>
+                        </div>
+                        
+                        <div class="control-group">
+                            <button type="button" id="pause-analysis-btn" class="btn btn-warning" disabled>
+                                <span class="btn-icon">⏸️</span>
+                                Pause
+                            </button>
+                            <button type="button" id="resume-analysis-btn" class="btn btn-info" disabled style="display: none;">
+                                <span class="btn-icon">▶️</span>
+                                Resume
+                            </button>
+                            <button type="button" id="stop-analysis-btn" class="btn btn-danger" disabled>
+                                <span class="btn-icon">⏹️</span>
+                                Stop
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Bar -->
+                    <div class="progress-container">
+                        <div class="progress-info">
+                            <span id="progress-text">Ready to analyze</span>
+                            <span id="progress-stats">0 / 0 completed</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div id="progress-fill" class="progress-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Data Table Section -->
+            <section class="table-section" style="display: none;">
+                <div class="table-card">
+                    <div class="table-header">
+                        <h2>📊 Analysis Results</h2>
+                        
+                        <!-- Table Controls -->
+                        <div class="table-controls">
+                            <div class="search-group">
+                                <input type="text" id="search-input" placeholder="Search URLs..." class="search-input">
+                                <button type="button" id="clear-search-btn" class="btn btn-sm">Clear</button>
+                            </div>
+                            
+                            <div class="filter-group">
+                                <select id="status-filter" class="filter-select">
+                                    <option value="">All Statuses</option>
+                                    <option value="Pending">Pending</option>
+                                    <option value="Processing">Processing</option>
+                                    <option value="Completed">Completed</option>
+                                    <option value="Error">Error</option>
+                                </select>
+                            </div>
+                            
+                            <div class="export-group">
+                                <button type="button" id="export-csv-btn" class="btn btn-outline">
+                                    📄 Export CSV
+                                </button>
+                                <button type="button" id="export-excel-btn" class="btn btn-outline">
+                                    📊 Export Excel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Data Table -->
+                    <div class="table-wrapper">
+                        <table id="results-table" class="results-table">
+                            <thead>
+                                <tr>
+                                    <th class="checkbox-col">
+                                        <input type="checkbox" id="select-all-checkbox" title="Select All">
+                                    </th>
+                                    <th class="sortable" data-column="url">
+                                        eBay URL <span class="sort-indicator"></span>
+                                    </th>
+                                    <th class="sortable" data-column="title">
+                                        Product Title <span class="sort-indicator"></span>
+                                    </th>
+                                    <th class="sortable" data-column="productFiche">
+                                        Product Fiche Y/N <span class="sort-indicator"></span>
+                                    </th>
+                                    <th class="sortable" data-column="energyLabel">
+                                        Energy Label Y/N <span class="sort-indicator"></span>
+                                    </th>
+                                    <th class="sortable" data-column="mouseoverLabel">
+                                        Mouseover Label Y/N <span class="sort-indicator"></span>
+                                    </th>
+                                    <th class="sortable" data-column="status">
+                                        Status <span class="sort-indicator"></span>
+                                    </th>
+                                    <th class="sortable" data-column="lastAnalyzed">
+                                        Last Analyzed <span class="sort-indicator"></span>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-body">
+                                <!-- Table rows will be dynamically inserted here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Table Footer -->
+                    <div class="table-footer">
+                        <div class="row-count">
+                            Showing <span id="visible-rows">0</span> of <span id="total-rows">0</span> rows
+                        </div>
+                        <div class="table-actions">
+                            <button type="button" id="select-all-visible-btn" class="btn btn-sm">
+                                Select All Visible
+                            </button>
+                            <button type="button" id="deselect-all-btn" class="btn btn-sm">
+                                Deselect All
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Footer -->
+        <footer class="app-footer">
+            <div class="footer-content">
+                <p>&copy; Mahmoud Rafati | 2025 MITHRA Energy Label Analyzer. Built for SEG D2C Division. </p>
+                <div class="footer-links">
+                    <a href="#" class="footer-link">Documentation</a>
+                    <a href="#" class="footer-link">Support</a>
+                    <a href="#" class="footer-link">GitHub</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p id="loading-message">Processing...</p>
+        </div>
+    </div>
+
+    <!-- Load Application Scripts -->
+    <script type="module" src="frontend/app.js"></script>
+</body>
+</html>
